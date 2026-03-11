@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple Trade · UI Mockups</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0b0d;
+    color: #f3f4f6;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
+    min-height: 100vh;
+    padding: 48px 40px 64px;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .title { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+  .subtitle { font-size: 12px; color: #6b7280; letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; }
+  .back {
+    margin-left: auto;
+    font-size: 12px;
+    color: #6b7280;
+    text-decoration: none;
+    padding: 6px 12px;
+    border: 1px solid #1f2937;
+    border-radius: 6px;
+    transition: color .15s, border-color .15s;
+  }
+  .back:hover { color: #d1d5db; border-color: #374151; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 48px; }
+  .section-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #9ca3af;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #1f2937;
+  }
+
+  /* ── Image row ── */
+  .row {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  /* ── Entry item (image + label + pros/cons) ── */
+  .entry-item {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    width: 160px;
+  }
+  .entry-item a {
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+  .entry-item img {
+    height: 300px;
+    width: auto;
+    max-width: 160px;
+    border-radius: 12px;
+    border: 1px solid #1f2937;
+    display: block;
+    transition: border-color .15s, transform .2s;
+  }
+  .entry-item a:hover img {
+    border-color: #4b5563;
+    transform: translateY(-3px);
+  }
+  .label {
+    font-size: 10px;
+    color: #6b7280;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .num { color: #374151; margin-right: 3px; font-variant-numeric: tabular-nums; }
+
+  /* ── Pros/Cons ── */
+  .pc {
+    width: 100%;
+    font-size: 10.5px;
+    line-height: 1.65;
+    text-align: left;
+    padding: 10px 2px 0;
+  }
+  .ph {
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.3px;
+    margin-bottom: 3px;
+  }
+  .ph.g { color: #0ECB81; }
+  .ph.r { color: #F6465D; margin-top: 7px; }
+  .pc ul {
+    padding-left: 10px;
+    color: #6b7280;
+    margin: 0;
+  }
+  .pc li { margin-bottom: 1px; }
+
+  /* ── Standard item (AI dialog row, no pros/cons) ── */
+  .item {
+    text-decoration: none;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .item img {
+    height: 300px;
+    width: auto;
+    border-radius: 12px;
+    border: 1px solid #1f2937;
+    display: block;
+    transition: border-color .15s, transform .2s;
+  }
+  .item:hover img {
+    border-color: #4b5563;
+    transform: translateY(-3px);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="title">Simple Trade · UI Mockups</div>
+    <div class="subtitle">13 Screens · AI 交易助手全链路设计</div>
+  </div>
+  <a href="/25_AI/pm-ai-cases-v2.html" class="back">← 返回案例</a>
+</div>
+
+<!-- Row 1: 入口方案 + 优劣势对比 -->
+<div class="section">
+  <div class="section-label">入口方案</div>
+  <div class="row">
+
+    <!-- 01: P2P充值成功 AI弹窗 (FTD trigger) -->
+    <div class="entry-item">
+      <a href="images/01_P2P充值成功_AI弹窗_v6.png" target="_blank">
+        <img src="images/01_P2P充值成功_AI弹窗_v6.png" alt="01">
+        <div class="label"><span class="num">01</span>P2P充值成功 AI弹窗</div>
+      </a>
+      <div class="pc">
+        <div class="ph g">✓ 优势</div>
+        <ul>
+          <li>触达时机最精准，充值后资金就绪、意图最强</li>
+          <li>包赔券露出情境贴合，转化钩子强</li>
+          <li>不改 Trade 页任何结构</li>
+        </ul>
+        <div class="ph r">✗ 注意</div>
+        <ul>
+          <li>仅 FTD 用户充值后可见，触达人群窄</li>
+          <li>依赖充值行为触发，一次性展示</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 02: 首页 FTD引导 (H · Carousel) -->
+    <div class="entry-item">
+      <a href="images/02_欧易首页_FTD引导_v6.png" target="_blank">
+        <img src="images/02_欧易首页_FTD引导_v6.png" alt="02">
+        <div class="label"><span class="num">02</span>首页 FTD引导</div>
+      </a>
+      <div class="pc">
+        <div class="ph g">✓ 优势</div>
+        <ul>
+          <li>首屏可见，无需进入 Trade 页即发现 AI</li>
+          <li>Carousel 机制支持活动期强推</li>
+          <li>跳转路径最短，零改 Trade 页结构</li>
+        </ul>
+        <div class="ph r">✗ 注意</div>
+        <ul>
+          <li>依赖首页 Carousel 运营权重</li>
+          <li>进 Trade 页后无持久入口，需配合固定方案</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 03: 闪兑页 AI常驻入口 (F3 · 固定行) -->
+    <div class="entry-item">
+      <a href="images/03_闪兑页_AI常驻入口_v6.png" target="_blank">
+        <img src="images/03_闪兑页_AI常驻入口_v6.png" alt="03">
+        <div class="label"><span class="num">03</span>闪兑页 AI常驻入口</div>
+      </a>
+      <div class="pc">
+        <div class="ph g">✓ 优势</div>
+        <ul>
+          <li>固定位置永不消失，优于 Banner</li>
+          <li>工程量小，不改 Tab 结构</li>
+          <li>包赔券信息直接露出，转化钩子强</li>
+          <li>视觉层级适中，不压制主交易功能</li>
+        </ul>
+        <div class="ph r">✗ 注意</div>
+        <ul>
+          <li>Convert 页增加行元素，压缩键盘空间</li>
+          <li>不如 Tab 方案清晰定义「AI 模式」</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 04: Convert Tab 方案A (F1 · 独立Tab) -->
+    <div class="entry-item">
+      <a href="images/04_Convert_Tab_方案A_v3.png" target="_blank">
+        <img src="images/04_Convert_Tab_方案A_v3.png" alt="04">
+        <div class="label"><span class="num">04</span>Convert Tab 方案A</div>
+      </a>
+      <div class="pc">
+        <div class="ph g">✓ 优势</div>
+        <ul>
+          <li>AI 一等公民，与 Buy/Sell/Convert 地位对等</li>
+          <li>永久可见，心智最清晰</li>
+          <li>为功能扩展预留架构空间</li>
+        </ul>
+        <div class="ph r">✗ 注意</div>
+        <ul>
+          <li>改 Tab 组件，工程量中</li>
+          <li>4 个 pill 在小屏偏挤</li>
+          <li>AI 与 Buy/Sell 概念层级不同</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 05: Convert 方案B (T1 · 可关闭 Banner) -->
+    <div class="entry-item">
+      <a href="images/05_Convert_方案B_v5.png" target="_blank">
+        <img src="images/05_Convert_方案B_v5.png" alt="05">
+        <div class="label"><span class="num">05</span>Convert 方案B</div>
+      </a>
+      <div class="pc">
+        <div class="ph g">✓ 优势</div>
+        <ul>
+          <li>新用户首次进入 Convert 页即可见</li>
+          <li>可配合包赔活动初期（1–2 周）强推</li>
+          <li>工程量小，可叠加任意固定方案</li>
+        </ul>
+        <div class="ph r">✗ 注意</div>
+        <ul>
+          <li>关闭后永久消失，持久性为零</li>
+          <li>复访用户无法再次触达</li>
+          <li>须配合固定入口（F2/F3）使用</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Row 2: AI 对话流程 -->
+<div class="section">
+  <div class="section-label">AI 对话流程</div>
+  <div class="row">
+    <a href="images/06_AI交易Tab主页_v6.png" target="_blank" class="item">
+      <img src="images/06_AI交易Tab主页_v6.png" alt="06a">
+      <div class="label"><span class="num">06a</span>AI交易Tab 主页</div>
+    </a>
+    <a href="images/06_交易确认弹窗_包赔券_v6.png" target="_blank" class="item">
+      <img src="images/06_交易确认弹窗_包赔券_v6.png" alt="06b">
+      <div class="label"><span class="num">06b</span>交易确认弹窗 包赔券</div>
+    </a>
+    <a href="images/07_AI意图识别响应_v6.png" target="_blank" class="item">
+      <img src="images/07_AI意图识别响应_v6.png" alt="07">
+      <div class="label"><span class="num">07</span>AI意图识别响应</div>
+    </a>
+    <a href="images/08_交易确认页_v6.png" target="_blank" class="item">
+      <img src="images/08_交易确认页_v6.png" alt="08">
+      <div class="label"><span class="num">08</span>交易确认页</div>
+    </a>
+    <a href="images/09_事件合约推荐_v6.png" target="_blank" class="item">
+      <img src="images/09_事件合约推荐_v6.png" alt="09">
+      <div class="label"><span class="num">09</span>事件合约推荐</div>
+    </a>
+    <a href="images/10_首笔交易成功_v6.png" target="_blank" class="item">
+      <img src="images/10_首笔交易成功_v6.png" alt="10">
+      <div class="label"><span class="num">10</span>首笔交易成功</div>
+    </a>
+    <a href="images/11_AI对话内确认卡片_v1.png" target="_blank" class="item">
+      <img src="images/11_AI对话内确认卡片_v1.png" alt="11">
+      <div class="label"><span class="num">11</span>AI对话内确认卡片</div>
+    </a>
+    <a href="images/12_AI对话内成功态_v1.png" target="_blank" class="item">
+      <img src="images/12_AI对话内成功态_v1.png" alt="12">
+      <div class="label"><span class="num">12</span>AI对话内成功态</div>
+    </a>
+  </div>
+</div>
+
+</body>
+</html>

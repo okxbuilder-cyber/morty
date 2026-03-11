@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>Simple Trade · AI Flow Demo — Q5 对比 + 入口方案切换</title>
+  <style>
+    :root { --lime:#C0F237; --green:#0ECB81; --red:#F6465D; --card:#1C1C1C; --border:#2A2A2A; }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0 }
+    body { background:#0a0a0a; color:#fff;
+           font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;
+           display:flex; flex-direction:column; align-items:center;
+           min-height:100vh; padding:24px 16px 48px }
+
+    /* ─── Top Controls ─── */
+    .top-ctrl { width:375px; display:flex; flex-direction:column; gap:10px; margin-bottom:16px }
+    .top-tag { font-size:11px; color:#555; text-align:center; letter-spacing:.5px }
+    #vbar { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; padding:2px 0 }
+    .vb { padding:6px 12px; border-radius:20px; font-size:12px; background:#1A1A1F;
+          color:#A7A8B3; border:1px solid #2A2A35; cursor:pointer; transition:.15s }
+    .vb.on { background:#C0F237; color:#000; font-weight:700; border-color:#C0F237 }
+
+    /* Progress bar */
+    .prog { display:flex; align-items:center; justify-content:center }
+    .ps { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer }
+    .psd { width:28px; height:28px; border-radius:50%; background:#1A1A1F;
+           border:1px solid #2A2A35; display:flex; align-items:center; justify-content:center;
+           font-size:11px; font-weight:600; color:#A7A8B3; transition:.2s }
+    .psd.on  { background:#C0F237; color:#000; border-color:#C0F237 }
+    .psd.done{ background:#333; color:#666; border-color:#333 }
+    .psl { width:28px; height:1px; background:#2A2A35; margin-bottom:20px }
+    .psl.done { background:#C0F237 }
+    .pln { font-size:10px; color:#555; max-width:54px; text-align:center; line-height:1.3 }
+    .pln.on { color:#C0F237 }
+
+    /* Q5 Toggle */
+    .q5-wrap { display:flex; flex-direction:column; gap:5px; align-items:center }
+    .q5-tag  { font-size:10px; color:#555; letter-spacing:.3px }
+    .q5-row  { display:flex; gap:4px; background:#111; padding:3px; border-radius:20px }
+    .q5b { padding:5px 14px; border-radius:17px; font-size:12px; color:#666; cursor:pointer; transition:.15s }
+    .q5b.on { background:#C0F237; color:#000; font-weight:700 }
+
+    /* Phone */
+    .phone { position:relative; width:375px; height:812px; border-radius:44px;
+             overflow:hidden; background:#000; box-shadow:0 0 0 2px #222,0 24px 64px rgba(0,0,0,.8) }
+    .screen { position:absolute; inset:0; display:none; flex-direction:column; background:#000 }
+    .screen.on { display:flex }
+
+    /* ─── Screens 2-5 shared status bar ─── */
+    .sb  { height:44px; display:flex; align-items:flex-end; justify-content:space-between;
+           padding:0 20px 8px; flex-shrink:0 }
+    .sbt { font-size:15px; font-weight:600 }
+    .sbr { display:flex; gap:6px; align-items:center }
+    .sbr span { font-size:12px }
+
+    /* Chat nav */
+    .chat-nav { height:44px; display:flex; align-items:center; padding:0 16px; gap:12px;
+                border-bottom:.5px solid #1A1A1A; flex-shrink:0 }
+    .chat-back { font-size:22px; color:#C0F237; cursor:pointer; padding:4px 8px 4px 0 }
+    .chat-title { display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600 }
+    .online-dot { width:8px; height:8px; border-radius:50%; background:#0ECB81 }
+    /* Chat body */
+    .chat-body { flex:1; overflow-y:auto; padding:16px 16px 8px;
+                 display:flex; flex-direction:column; gap:12px }
+    .chips-row { display:flex; gap:8px; padding:8px 16px; flex-shrink:0; overflow-x:auto }
+    .chips-row::-webkit-scrollbar { display:none }
+    .ch { padding:7px 14px; border-radius:20px; font-size:13px; background:#1C1C1C;
+          color:#ddd; border:1px solid #2A2A35; cursor:pointer; white-space:nowrap; flex-shrink:0 }
+    .chat-inp { display:flex; align-items:center; gap:8px; padding:8px 16px 24px;
+                border-top:.5px solid #1A1A1A; flex-shrink:0 }
+    .chat-input { flex:1; background:#1C1C1C; border:1px solid #2A2A35; border-radius:22px;
+                  padding:10px 16px; font-size:14px; color:#fff; outline:none }
+    .chat-send { width:36px; height:36px; border-radius:50%; background:#C0F237;
+                 display:flex; align-items:center; justify-content:center;
+                 font-size:16px; color:#000; cursor:pointer; flex-shrink:0 }
+
+    /* Chat bubbles */
+    .mu { align-self:flex-end; background:#1C1C1C; border-radius:18px 18px 4px 18px;
+          padding:10px 14px; font-size:14px; max-width:75%; line-height:1.5 }
+    .ai-row { display:flex; gap:8px; align-items:flex-start }
+    .ai-av  { width:32px; height:32px; border-radius:50%; background:#1A2E0A;
+              border:1px solid rgba(192,242,55,.3); display:flex; align-items:center;
+              justify-content:center; font-size:16px; flex-shrink:0 }
+    .ma { background:#171717; border-radius:4px 18px 18px 18px; padding:10px 14px;
+          font-size:14px; max-width:78%; line-height:1.5 }
+    .typing { display:flex; gap:5px; padding:4px 2px; align-items:center }
+    .typing span { width:7px; height:7px; border-radius:50%; background:#555;
+                   animation:bounce .9s infinite }
+    .typing span:nth-child(2){ animation-delay:.2s }
+    .typing span:nth-child(3){ animation-delay:.4s }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+    /* Recommendation card */
+    .rec-card { background:#0F1A02; border:1px solid rgba(192,242,55,.2); border-radius:16px;
+                padding:14px; margin-top:6px; width:100% }
+    .rc-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px }
+    .rc-name { font-size:15px; font-weight:600 }
+    .rc-chg  { font-size:13px; color:#0ECB81 }
+    .rc-price{ font-size:13px; color:#888; margin-bottom:8px }
+    .rc-reason { font-size:12px; color:#A7A8B3; line-height:1.5; margin-bottom:10px }
+    .rc-meta { display:flex; gap:8px; background:#0A0A0A; border-radius:10px;
+               padding:10px 12px; margin-bottom:10px }
+    .rc-meta-l { flex:1 }
+    .rc-amt  { font-size:14px; font-weight:600; margin-bottom:3px }
+    .rc-voucher{ font-size:11px; color:#0ECB81 }
+    .rc-btns { display:flex; gap:8px }
+    .rc-btn-p { flex:1; background:#C0F237; color:#000; border-radius:12px; padding:10px;
+                font-size:14px; font-weight:700; text-align:center; cursor:pointer }
+    .rc-btn-s { flex:1; background:#1C1C1C; color:#888; border-radius:12px; padding:10px;
+                font-size:14px; text-align:center; cursor:pointer; border:1px solid #2A2A35 }
+
+    /* Confirmation card */
+    .conf-card { background:#111; border:1px solid #222; border-radius:16px;
+                 padding:14px; margin-top:6px; width:100% }
+    .cc-title { font-size:13px; font-weight:600; color:#888; margin-bottom:10px;
+                text-align:center; letter-spacing:.5px }
+    .cc-row { display:flex; justify-content:space-between; align-items:center;
+              padding:7px 0; border-bottom:.5px solid #1A1A1A }
+    .cc-row:last-of-type { border-bottom:none }
+    .cc-lbl { font-size:13px; color:#666 }
+    .cc-val { font-size:13px; font-weight:500 }
+    .cc-voucher { font-size:12px; color:#0ECB81; margin:8px 0 10px;
+                  padding:8px; background:rgba(14,203,129,.08); border-radius:8px; text-align:center }
+    .cc-btns { display:flex; gap:8px; margin-top:10px }
+    .cc-btn-p { flex:1; background:#C0F237; color:#000; border-radius:12px; padding:10px;
+                font-size:14px; font-weight:700; text-align:center; cursor:pointer }
+    .cc-btn-s { flex:1; background:#1C1C1C; color:#888; border-radius:12px; padding:10px;
+                font-size:14px; text-align:center; cursor:pointer; border:1px solid #2A2A35 }
+
+    /* Screen 4B — standalone confirm page */
+    .page-voucher { background:rgba(14,203,129,.1); border-bottom:1px solid rgba(14,203,129,.2);
+                    padding:8px 16px; font-size:12px; color:#0ECB81; text-align:center; flex-shrink:0 }
+    .page-nav  { height:44px; display:flex; align-items:center; padding:0 16px; gap:12px;
+                 border-bottom:.5px solid #1A1A1A; flex-shrink:0 }
+    .page-back { font-size:22px; color:#C0F237; cursor:pointer; padding:4px 8px 4px 0 }
+    .page-title{ font-size:17px; font-weight:600 }
+    .page-body { flex:1; padding:0 16px; overflow-y:auto }
+    .page-row  { display:flex; justify-content:space-between; align-items:center;
+                 padding:14px 0; border-bottom:.5px solid #1A1A1A }
+    .page-lbl  { font-size:14px; color:#888 }
+    .page-val  { font-size:14px; font-weight:500 }
+    .page-voucher-row { background:rgba(14,203,129,.08); border-radius:10px; padding:12px;
+                        margin-top:12px; font-size:13px; color:#0ECB81 }
+    .cta { margin:0 16px 24px; background:#C0F237; color:#000; font-size:17px; font-weight:700;
+           border-radius:16px; height:54px; display:flex; align-items:center; justify-content:center;
+           cursor:pointer; flex-shrink:0 }
+
+    /* Screen 5 — success */
+    .suc-body { flex:1; display:flex; flex-direction:column; align-items:center;
+                padding:32px 24px 16px; overflow-y:auto }
+    .suc-icon { font-size:48px; margin-bottom:12px }
+    .suc-ttl  { font-size:22px; font-weight:700; margin-bottom:4px }
+    .suc-sub  { font-size:14px; color:#888; margin-bottom:24px }
+    .suc-card { background:#111; border-radius:16px; padding:16px; width:100%; margin-bottom:16px }
+    .suc-row  { display:flex; justify-content:space-between; align-items:center;
+                padding:8px 0; border-bottom:.5px solid #1A1A1A }
+    .suc-row:last-child { border-bottom:none }
+    .suc-lbl  { font-size:13px; color:#888 }
+    .suc-val  { font-size:13px; font-weight:500 }
+    .voucher-row { font-size:12px; color:#0ECB81; background:rgba(14,203,129,.08);
+                   border-radius:10px; padding:10px 14px; width:100%; margin-bottom:16px }
+    .prog-wrap { width:100%; margin-bottom:20px }
+    .pw-label  { font-size:12px; color:#888; margin-bottom:8px; text-align:center }
+    .prog-dots { display:flex; justify-content:center; gap:10px; align-items:center }
+    .pd { width:10px; height:10px; border-radius:50%; background:#1C1C1C; border:1px solid #2A2A35 }
+    .pd.on { background:#C0F237; border-color:#C0F237; width:14px; height:14px }
+    .suc-btns  { display:flex; gap:10px; padding:0 24px 32px; flex-shrink:0 }
+    .suc-btn-p { flex:1; background:#C0F237; color:#000; border-radius:14px; height:48px;
+                 display:flex; align-items:center; justify-content:center;
+                 font-size:15px; font-weight:700; cursor:pointer }
+    .suc-btn-s { flex:1; background:#1C1C1C; color:#ddd; border-radius:14px; height:48px;
+                 display:flex; align-items:center; justify-content:center;
+                 font-size:15px; cursor:pointer; border:1px solid #2A2A35 }
+
+    /* Processing overlay */
+    .proc { position:absolute; inset:0; background:rgba(0,0,0,.85); display:none;
+            flex-direction:column; align-items:center; justify-content:center; gap:16px }
+    .proc.show { display:flex }
+    .spinner { width:40px; height:40px; border-radius:50%; border:3px solid #2A2A35;
+               border-top-color:#C0F237; animation:spin 1s linear infinite }
+    @keyframes spin { to { transform:rotate(360deg) } }
+    .proc-txt { font-size:15px; color:#888 }
+
+    /* ═══ Screen 1 variants — shared base ═══ */
+    .sbar { height:44px; display:flex; align-items:flex-end; justify-content:space-between;
+            padding:0 20px 8px; flex-shrink:0 }
+    .sbar .time  { font-size:15px; font-weight:600 }
+    .sbar .icons { font-size:12px; letter-spacing:-1px }
+
+    .action-bar { height:36px; display:flex; align-items:center; justify-content:flex-end;
+                  padding:0 16px; gap:10px; flex-shrink:0 }
+    .nav-ai-btn { width:30px; height:30px; border-radius:50%; display:flex; align-items:center;
+                  justify-content:center; font-size:16px; cursor:pointer;
+                  background:rgba(192,242,55,.12); border:1px solid rgba(192,242,55,.3) }
+    .nav-more   { font-size:18px; color:#888; cursor:pointer; padding:4px 2px }
+
+    .trade-tabs { display:flex; padding:0 12px; border-bottom:.5px solid #1A1A1A;
+                  flex-shrink:0; overflow-x:auto }
+    .trade-tabs::-webkit-scrollbar { display:none }
+    .ttab { padding:8px 10px; font-size:12.5px; color:#888; cursor:pointer; white-space:nowrap;
+            flex-shrink:0; border-bottom:2px solid transparent }
+    .ttab.on { color:#fff; font-weight:600; border-bottom-color:#C0F237 }
+
+    .pills-row   { display:flex; align-items:center; padding:8px 14px; gap:8px; flex-shrink:0 }
+    .pills-group { display:flex; background:#1C1C1C; border-radius:20px; padding:2px; flex:1 }
+    .pill { flex:1; height:30px; border-radius:18px; display:flex; align-items:center;
+            justify-content:center; font-size:13px; color:#888; cursor:pointer; gap:4px }
+    .pill.on    { background:#fff; color:#000; font-weight:600 }
+    .pill.ai-on { background:#C0F237; color:#000; font-weight:700 }
+    .pills-extra{ font-size:18px; color:#666; padding:4px; cursor:pointer }
+
+    .amount-area { padding:16px 20px 10px; flex-shrink:0 }
+    .amount-num  { display:flex; align-items:baseline; gap:8px }
+    .amount-num > span:first-child { font-size:44px; font-weight:300; color:#fff; line-height:1 }
+    .amount-cursor { width:2px; height:42px; background:#C0F237; animation:blink 1s infinite }
+    @keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+    .amount-ccy  { font-size:20px; font-weight:400; color:#888 }
+    .amount-usd  { font-size:13px; color:#C0F237; margin-top:6px }
+
+    /* Token card */
+    .token-card { margin:8px 16px; background:#1C1C1C; border-radius:14px;
+                  overflow:hidden; flex-shrink:0 }
+    .trow { display:flex; align-items:center; padding:12px 14px; gap:10px; position:relative }
+    .trow:first-child { border-bottom:.5px solid #111 }
+    .tlogo { width:32px; height:32px; border-radius:50%; background:#333;
+             display:flex; align-items:center; justify-content:center;
+             font-size:13px; font-weight:700; flex-shrink:0 }
+    .tinfo { flex:1 }
+    .tname  { font-size:14px; font-weight:600; margin-bottom:2px }
+    .tlabel { font-size:12px; color:#888 }
+    .tbalance { text-align:right }
+    .tbal-num   { font-size:14px; font-weight:500; margin-bottom:2px }
+    .tbal-label { font-size:12px; color:#888 }
+    .tchev { font-size:14px; color:#888 }
+    .swap-icon { position:absolute; right:14px; top:50%; transform:translateY(-50%);
+                 width:28px; height:28px; border-radius:50%; background:#111;
+                 border:1px solid #333; display:flex; align-items:center; justify-content:center;
+                 font-size:14px; color:#888; z-index:2 }
+
+    .pct-row { display:flex; gap:6px; padding:8px 16px; flex-shrink:0 }
+    .pct-btn { flex:1; background:#1C1C1C; border:1px solid #2A2A35; border-radius:8px;
+               height:30px; display:flex; align-items:center; justify-content:center;
+               font-size:12px; color:#888; cursor:pointer }
+
+    /* Persistent AI row (F3) */
+    .ai-persistent-row { display:flex; align-items:center; margin:6px 16px; padding:10px 14px;
+                         background:#0A1A02; border:1px solid rgba(192,242,55,.25);
+                         border-radius:12px; cursor:pointer; flex-shrink:0; gap:10px }
+    .apr-left { display:flex; flex:1; align-items:center; gap:10px; min-width:0 }
+    .apr-icon { font-size:18px; flex-shrink:0 }
+    .apr-text { flex:1; min-width:0 }
+    .apr-text .main { font-size:13px; font-weight:600; color:#C0F237; margin-bottom:2px }
+    .apr-text .sub  { font-size:11px; color:#888 }
+    .apr-arr { font-size:16px; color:#C0F237; flex-shrink:0 }
+
+    /* Dismissible banner (T1) */
+    .ai-banner { display:flex; align-items:center; margin:6px 16px; padding:10px 14px;
+                 background:linear-gradient(135deg,#0A1A02,#111);
+                 border:1px solid rgba(192,242,55,.25); border-radius:12px;
+                 flex-shrink:0; gap:10px }
+    .ab-icon { font-size:20px; flex-shrink:0 }
+    .ab-text { flex:1; cursor:pointer }
+    .ab-main { font-size:13px; font-weight:600; color:#C0F237; margin-bottom:2px }
+    .ab-sub  { font-size:11px; color:#888 }
+    .ab-arr  { font-size:16px; color:#C0F237; cursor:pointer }
+    .ab-x    { font-size:18px; color:#555; cursor:pointer; padding:4px; flex-shrink:0 }
+
+    /* Zero-state AI chips (T2) */
+    .zero-state-ai { margin:6px 16px; padding:12px 14px; background:#0D0D0D;
+                     border:1px solid #1E1E1E; border-radius:12px; flex-shrink:0 }
+    .zs-prompt { font-size:13px; color:#888; margin-bottom:8px }
+    .zs-prompt .hl { color:#C0F237; font-weight:600 }
+    .zs-chips  { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:8px }
+    .zs-chip   { padding:6px 12px; border-radius:16px; background:#1A1A1F;
+                 border:1px solid #2A2A35; font-size:12px; color:#A7A8B3; cursor:pointer }
+    .zs-note   { font-size:11px; color:#444 }
+
+    /* F1 AI mode panel */
+    .ai-mode { flex:1; display:flex; flex-direction:column; padding:12px 16px; gap:10px;
+               overflow-y:auto }
+    .ai-mode-hdr { display:flex; align-items:center; gap:10px; padding:10px 14px;
+                   background:#0D1800; border:1px solid rgba(192,242,55,.2); border-radius:14px }
+    .ai-ava-sm   { width:32px; height:32px; border-radius:50%; background:#1A2E0A;
+                   border:1px solid rgba(192,242,55,.3); display:flex; align-items:center;
+                   justify-content:center; font-size:16px; flex-shrink:0 }
+    .ai-mode-title { font-size:14px; font-weight:600; flex:1 }
+    .ai-badge    { font-size:10px; background:rgba(192,242,55,.15); color:#C0F237;
+                   padding:2px 8px; border-radius:10px; border:1px solid rgba(192,242,55,.3) }
+    .chat-area   { display:flex; flex-direction:column; gap:10px }
+    .f1-bubble   { background:#1C1C1C; border-radius:12px; padding:10px 14px;
+                   font-size:13px; color:#ddd; line-height:1.5 }
+    .chip-row  { display:flex; gap:7px; flex-wrap:wrap }
+    .chip-btn  { padding:6px 13px; border-radius:16px; background:#1A1A1F;
+                 border:1px solid #2A2A35; font-size:12px; color:#A7A8B3; cursor:pointer }
+    .f1-gc     { background:#0A1A02; border:1px solid rgba(192,242,55,.2);
+                 border-radius:12px; padding:12px 14px }
+    .f1-gc-title{ font-size:12px; color:#888; margin-bottom:6px }
+    .f1-gc-cta  { background:#C0F237; color:#000; border-radius:10px; padding:9px;
+                  font-size:13px; font-weight:700; text-align:center; cursor:pointer; margin-top:8px }
+
+    /* Keypad */
+    .keypad { display:grid; grid-template-columns:repeat(3,1fr); flex-shrink:0 }
+    .key { height:52px; display:flex; align-items:center; justify-content:center;
+           font-size:20px; font-weight:400; color:#fff; background:#000; cursor:pointer;
+           border:.5px solid #0D0D0D }
+    .key:active { background:#1A1A1A }
+    .key.sym { font-size:16px; color:#888 }
+
+    /* Bottom Nav */
+    .bnav-slot { height:76px; flex-shrink:0; }
+    .bnav  { position:absolute; bottom:0; left:0; right:0; height:76px;
+             display:flex; align-items:flex-start; padding-top:8px;
+             border-top:.5px solid #1A1A1A; background:#000; }
+    .bitem { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer }
+    .bitem.center { margin-top:-14px }
+    .bicon { display:flex; align-items:center; justify-content:center; height:28px }
+    .blabel { font-size:10px; color:#666 }
+    .blabel.on { color:#C0F237 }
+    .trade-orb { width:48px; height:48px; border-radius:50%; background:#fff;
+                 display:flex; align-items:center; justify-content:center;
+                 box-shadow:0 2px 12px rgba(255,255,255,.2);
+                 font-size:10px; font-weight:700; color:#000 }
+
+    /* ── Home Page v2 (Live-accurate layout) ── */
+    .hnav { height:44px; display:flex; align-items:center; padding:0 16px; flex-shrink:0; justify-content:space-between; }
+    .hnav-pill { background:#1C1C1C; border-radius:20px; padding:5px 12px; display:flex; align-items:center; gap:5px; font-size:13px; font-weight:500; color:#fff; }
+    .hsearch { margin:13px 16px 11px; height:34px; background:#1A1A1A; border-radius:17px; display:flex; align-items:center; padding:0 12px; gap:8px; flex-shrink:0; }
+    .hsearch-text { font-size:12px; color:#555; }
+    .hassets { padding:20px 16px 12px; flex-shrink:0; position:relative; }
+    .hassets-label { font-size:11px; color:#666; margin-bottom:2px; display:flex; align-items:center; gap:5px; }
+    .hassets-val { font-size:30px; font-weight:700; color:#fff; display:flex; align-items:baseline; gap:6px; line-height:1.2; }
+    .hassets-val .suffix { font-size:12px; font-weight:500; color:#888; letter-spacing:0; }
+    .hassets-income { font-size:12px; color:var(--green); margin-top:2px; display:flex; align-items:center; gap:4px; }
+    .hassets-income .today { color:#666; font-size:12px; }
+    .hassets-chart { position:absolute; right:16px; top:50%; transform:translateY(-50%); }
+    .hactions-cards { padding:20px 24px 16px; display:flex; flex-direction:column; gap:12px; flex-shrink:0; }
+    .hactions { display:flex; gap:12px; margin-bottom:12px; }
+    .haction-btn { flex:1; height:36px; border-radius:18px; background:var(--lime); color:#000; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; }
+    .hcard { background:#1C1C1C; border-radius:12px; padding:12px 16px 12px 12px; display:flex; align-items:center; gap:12px; flex-shrink:0; position:relative; overflow:hidden; }
+    .hcard-num { position:absolute; top:12px; right:14px; font-size:10px; color:#555; }
+    .hcard-img { width:48px; height:48px; border-radius:10px; background:#2A2A2A; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+    .hcard-img-ai { width:48px; height:48px; border-radius:50%; flex-shrink:0; background:linear-gradient(135deg,var(--lime),#7DB81E); display:flex; align-items:center; justify-content:center; font-size:24px; }
+    .hcard-ai { background:linear-gradient(135deg,#0D1A02,#172A03); border:1px solid rgba(192,242,55,0.2); min-height:92px; }
+    .hcard-title { font-size:13px; font-weight:600; margin-bottom:3px; }
+    .hcard-sub { font-size:11px; color:#888; line-height:1.45; }
+    .hmtabs { display:flex; align-items:center; padding:0 16px; height:48px; flex-shrink:0; border-bottom:1px solid #111; margin-top:8px; }
+    .hmtab { font-size:13px; color:#555; white-space:nowrap; padding:0 10px; height:100%; display:flex; align-items:center; flex:1; justify-content:center; }
+    .hmtab.on { background:#2A2A2A; border-radius:20px; color:#fff; padding:0 12px; font-weight:600; height:24px; margin:auto 2px; }
+    .hmtab.arr { font-size:15px; color:#444; padding:0 4px; }
+    .hmitem2 { display:flex; align-items:center; height:60px; padding:0 24px; gap:10px; flex-shrink:0; }
+    .hmi-logo { width:32px; height:32px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; }
+    .hmi-info { flex:0 0 auto; min-width:68px; }
+    .hmi-name { font-size:13px; font-weight:600; }
+    .hmi-name span { font-weight:400; color:#555; }
+    .hmi-vol { font-size:11px; color:#555; margin-top:2px; }
+    .hmi-prices { flex:1; text-align:right; margin-right:8px; }
+    .hmi-price { font-size:13px; font-weight:500; }
+    .hmi-usd { font-size:11px; color:#555; margin-top:2px; }
+    .hmi-badge { min-width:60px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; flex-shrink:0; }
+    .hmi-badge.g { background:var(--green); color:#fff; }
+    .hmi-badge.r { background:var(--red); color:#fff; }
+  </style>
+</head>
+<body>
+
+<!-- ── TOP CONTROLS ── -->
+<div class="top-ctrl">
+  <div class="top-tag">▸ AI 入口方案对比 · 切换方案后点击 AI 入口进入完整交易旅程</div>
+  <div id="vbar">
+    <button class="vb on" id="vb-f2" onclick="setV('f2')">F2 · Nav 🤖</button>
+    <button class="vb" id="vb-f1" onclick="setV('f1')">F1 · AI Tab</button>
+    <button class="vb" id="vb-f3" onclick="setV('f3')">F3 · 常驻</button>
+    <button class="vb" id="vb-t1" onclick="setV('t1')">T1 · Banner</button>
+    <button class="vb" id="vb-t2" onclick="setV('t2')">T2 · 零状态</button>
+    <button class="vb" id="vb-s0" onclick="goTo(0)">🏠 首页</button>
+  </div>
+  <div class="prog">
+    <div class="ps"><div class="psd on" id="pd1">1</div><div class="pln on" id="pln1">Simple Trade</div></div>
+    <div class="psl" id="pl1"></div>
+    <div class="ps"><div class="psd" id="pd2">2</div><div class="pln" id="pln2">AI 开启</div></div>
+    <div class="psl" id="pl2"></div>
+    <div class="ps"><div class="psd" id="pd3">3</div><div class="pln" id="pln3">AI 推荐</div></div>
+    <div class="psl" id="pl3"></div>
+    <div class="ps"><div class="psd" id="pd4">4</div><div class="pln" id="pln4">确认</div></div>
+    <div class="psl" id="pl4"></div>
+    <div class="ps"><div class="psd" id="pd5">5</div><div class="pln" id="pln5">成功</div></div>
+  </div>
+
+</div>
+<div class="phone">
+
+  <!-- ═══ SCREEN 0: 首页 (Homepage) ═══ -->
+  <div class="screen" id="s0">
+    <div class="sbar"><span class="time">9:41</span><span class="icons">●●● ▲ 🔋</span></div>
+    <!-- Live-accurate top nav: 9-grid | 交易所▾ pill | 🎁 -->
+    <div class="hnav">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="#fff"/><rect x="8.5" y="2" width="5" height="5" rx="1" fill="#fff"/><rect x="15" y="2" width="5" height="5" rx="1" fill="#fff"/><rect x="2" y="8.5" width="5" height="5" rx="1" fill="#fff"/><rect x="8.5" y="8.5" width="5" height="5" rx="1" fill="#fff"/><rect x="15" y="8.5" width="5" height="5" rx="1" fill="#fff"/><rect x="2" y="15" width="5" height="5" rx="1" fill="#fff"/><rect x="8.5" y="15" width="5" height="5" rx="1" fill="#fff"/><rect x="15" y="15" width="5" height="5" rx="1" fill="#fff"/></svg>
+      <div class="hnav-pill">交易所 <span style="font-size:10px;color:#888">▾</span></div>
+      <span style="font-size:20px">🎁</span>
+    </div>
+    <!-- Search bar -->
+    <div class="hsearch">
+      <span style="font-size:14px;color:#555">🔍</span>
+      <span class="hsearch-text">🔥 XAUT 当前热搜</span>
+    </div>
+    <!-- Total assets -->
+    <div class="hassets">
+      <div class="hassets-label">总资产估值 <span style="font-size:13px;opacity:0.6">◎</span></div>
+      <div class="hassets-val">12,031.00 <span class="suffix">USDT ▾</span></div>
+      <div class="hassets-income">+13.21 (+5.90%) <span class="today">今日 ⓘ</span></div>
+      <svg class="hassets-chart" width="72" height="28" viewBox="0 0 72 28" fill="none">
+        <polyline points="0,22 8,20 16,24 24,16 32,18 40,10 48,6 56,12 64,4 72,8" stroke="var(--green)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--green)" stop-opacity="0.2"/><stop offset="100%" stop-color="var(--green)" stop-opacity="0"/></linearGradient>
+        <polygon points="0,22 8,20 16,24 24,16 32,18 40,10 48,6 56,12 64,4 72,8 72,28 0,28" fill="url(#cg)"/>
+      </svg>
+    </div>
+    <!-- Actions + AI Card -->
+    <div class="hactions-cards">
+      <div class="hactions">
+        <div class="haction-btn">链上充币</div>
+        <div class="haction-btn">C2C 买币</div>
+      </div>
+      <div class="hcard hcard-ai" onclick="goTo(2)" style="cursor:pointer">
+        <div class="hcard-num">1 / 5</div>
+        <div class="hcard-img-ai">🤖</div>
+        <div>
+          <div class="hcard-title" style="color:var(--lime)">OKX AI 交易助手</div>
+          <div class="hcard-sub">包赔券已就绪 · 首单最高 $200 保障<br>买 1 ETH 送 1 · 瓜分 500 万 · 00:05:37 开始</div>
+        </div>
+      </div>
+      <div class="hcard">
+        <div class="hcard-num">1 / 3</div>
+        <div class="hcard-img" style="background:#E74C3C;border-radius:50%">🅱️</div>
+        <div>
+          <div class="hcard-title">Airdrop Earn</div>
+          <div class="hcard-sub">申购 OKB 和 USDT 领取 BARD 空投</div>
+        </div>
+      </div>
+    </div>
+    <!-- Market tabs -->
+    <div class="hmtabs">
+      <div class="hmtab">自选</div>
+      <div class="hmtab on">热门榜</div>
+      <div class="hmtab">新币榜</div>
+      <div class="hmtab">DEX</div>
+      <div class="hmtab">涨幅</div>
+      <div class="hmtab arr">›</div>
+    </div>
+    <!-- Market items -->
+    <div class="hmitem2">
+      <div class="hmi-logo" style="background:#F7931A;color:#fff">BTC</div>
+      <div class="hmi-info"><div class="hmi-name">BTC<span>/USDT</span></div><div class="hmi-vol">成交量 12.3B</div></div>
+      <div class="hmi-prices"><div class="hmi-price">$95,240</div><div class="hmi-usd">≈ ¥693,890</div></div>
+      <div class="hmi-badge g">+2.41%</div>
+    </div>
+    <div class="hmitem2">
+      <div class="hmi-logo" style="background:#627EEA;color:#fff">ETH</div>
+      <div class="hmi-info"><div class="hmi-name">ETH<span>/USDT</span></div><div class="hmi-vol">成交量 8.7B</div></div>
+      <div class="hmi-prices"><div class="hmi-price">$3,420</div><div class="hmi-usd">≈ ¥24,860</div></div>
+      <div class="hmi-badge g">+1.83%</div>
+    </div>
+    <div class="hmitem2">
+      <div class="hmi-logo" style="background:#9B59B6;color:#fff">SOL</div>
+      <div class="hmi-info"><div class="hmi-name">SOL<span>/USDT</span></div><div class="hmi-vol">成交量 3.2B</div></div>
+      <div class="hmi-prices"><div class="hmi-price">$198.50</div><div class="hmi-usd">≈ ¥1,443</div></div>
+      <div class="hmi-badge r">-0.92%</div>
+    </div>
+    <div class="bnav-slot" id="bn-s0"></div>
+  </div>
+
+  <!-- ═══ SCREEN 1-F2: Nav Bar 🤖 (★ default) ═══ -->
+  <div class="screen on" id="s1-f2">
+    <div class="sbar"><span class="time">9:41</span><span class="icons">●●● ▲ 🔋</span></div>
+    <div class="action-bar">
+      <div class="nav-ai-btn" onclick="goTo(2)">🤖</div>
+      <div class="nav-more">···</div>
+    </div>
+    <div class="trade-tabs">
+      <div class="ttab on">闪兑</div><div class="ttab">现货</div><div class="ttab">合约</div><div class="ttab">DEX</div><div class="ttab">策略</div>
+    </div>
+    <div class="pills-row">
+      <div class="pills-group">
+        <div class="pill">买入</div><div class="pill">卖出</div><div class="pill on">闪兑</div>
+      </div>
+      <div class="pills-extra">📋</div>
+    </div>
+    <div class="amount-area">
+      <div class="amount-num"><span>0</span><div class="amount-cursor"></div><span class="amount-ccy">USDT</span></div>
+      <div class="amount-usd">↕ ≈0 USD</div>
+    </div>
+    <div class="token-card">
+      <div class="trow">
+        <div class="tlogo" style="background:#26A17B;color:#fff">USDT</div>
+        <div class="tinfo"><div class="tname">闪兑</div><div class="tlabel">USDT</div></div>
+        <div class="tbalance"><div class="tbal-num">0.00 USDT</div><div class="tbal-label">可用</div></div>
+        <div class="tchev">›</div>
+      </div>
+      <div class="trow" style="position:relative">
+        <div class="swap-icon">↕</div>
+        <div class="tlogo" style="background:#2775CA;color:#fff">USDC</div>
+        <div class="tinfo"><div class="tname">至</div><div class="tlabel">USDC</div></div>
+        <div class="tbalance"><div class="tbal-num">0.00 USDC</div><div class="tbal-label">&nbsp;</div></div>
+        <div class="tchev">›</div>
+      </div>
+    </div>
+    <div class="pct-row">
+      <div class="pct-btn">25%</div><div class="pct-btn">50%</div><div class="pct-btn">75%</div><div class="pct-btn">最大</div>
+    </div>
+    <div class="keypad">
+      <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+      <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+      <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+      <div class="key sym">.</div><div class="key">0</div><div class="key sym">⌫</div>
+    </div>
+    <div class="bnav-slot" id="bn-f2"></div>
+  </div><!-- /s1-f2 -->
+
+  <!-- ═══ SCREEN 1-F1: AI as 4th Pill Tab ═══ -->
+  <div class="screen" id="s1-f1">
+    <div class="sbar"><span class="time">9:41</span><span class="icons">●●● ▲ 🔋</span></div>
+    <div class="trade-tabs">
+      <div class="ttab on">闪兑</div><div class="ttab">现货</div><div class="ttab">合约</div><div class="ttab">DEX</div><div class="ttab">策略</div>
+    </div>
+    <!-- 4-tab pills, AI active -->
+    <div class="pills-row">
+      <div class="pills-group">
+        <div class="pill">买入</div>
+        <div class="pill">卖出</div>
+        <div class="pill">闪兑</div>
+        <div class="pill ai-on" onclick="goTo(2)">🤖 AI</div>
+      </div>
+    </div>
+    <!-- AI chat interface -->
+    <div class="ai-mode">
+      <div class="ai-mode-hdr">
+        <div class="ai-ava-sm">A</div>
+        <div class="ai-mode-title">OKX AI 交易助手</div>
+        <div class="ai-badge">包赔券已就绪 ✓</div>
+      </div>
+      <div class="chat-area">
+        <div class="bubble">你好！今天想买什么？或者让我来帮你推荐 👇</div>
+        <div class="chip-row">
+          <div class="chip-btn" onclick="goTo(2)">✨ 给我推荐</div>
+          <div class="chip-btn" onclick="goTo(2)">🪙 买 BTC</div>
+          <div class="chip-btn" onclick="goTo(2)">💡 $1 小额试试</div>
+        </div>
+        <div class="bubble">
+          <strong>📊 市场速览</strong><br>
+          BTC <span class="lime">+2.4%</span> · ETH <span class="lime">+1.8%</span><br>
+          <span style="font-size:11px;color:#555">今日普涨，适合小额体验</span>
+        </div>
+        <div class="gc">
+          <div class="gc-title">🎁 包赔权益已激活</div>
+          首次购买 ≤$200 · 亏损 OKX 全额补偿
+          <br><div class="gc-cta" onclick="goTo(2)">立即体验</div>
+        </div>
+      </div>
+    </div>
+    <div class="bnav-slot" id="bn-f1"></div>
+  </div><!-- /s1-f1 -->
+
+  <!-- ═══ SCREEN 1-F3: Persistent AI Row ═══ -->
+  <div class="screen" id="s1-f3">
+    <div class="sbar"><span class="time">9:41</span><span class="icons">●●● ▲ 🔋</span></div>
+    <div class="trade-tabs">
+      <div class="ttab on">闪兑</div><div class="ttab">现货</div><div class="ttab">合约</div><div class="ttab">DEX</div><div class="ttab">策略</div>
+    </div>
+    <div class="pills-row">
+      <div class="pills-group">
+        <div class="pill">买入</div><div class="pill">卖出</div><div class="pill on">闪兑</div>
+      </div>
+      <div class="pills-extra">📋</div>
+    </div>
+    <div class="amount-area">
+      <div class="amount-num"><span>0</span><div class="amount-cursor"></div><span class="amount-ccy">USDT</span></div>
+      <div class="amount-usd">↕ ≈0 USD</div>
+    </div>
+    <div class="token-card">
+      <div class="trow">
+        <div class="tlogo" style="background:#26A17B;color:#fff">USDT</div>
+        <div class="tinfo"><div class="tname">闪兑</div><div class="tlabel">USDT</div></div>
+        <div class="tbalance"><div class="tbal-num">0.00 USDT</div><div class="tbal-label">可用</div></div>
+        <div class="tchev">›</div>
+      </div>
+      <div class="trow" style="position:relative">
+        <div class="swap-icon">↕</div>
+        <div class="tlogo" style="background:#2775CA;color:#fff">USDC</div>
+        <div class="tinfo"><div class="tname">至</div><div class="tlabel">USDC</div></div>
+        <div class="tbalance"><div class="tbal-num">0.00 USDC</div><div class="tbal-label">&nbsp;</div></div>
+        <div class="tchev">›</div>
+      </div>
+    </div>
+    <div class="pct-row">
+      <div class="pct-btn">25%</div><div class="pct-btn">50%</div><div class="pct-btn">75%</div><div class="pct-btn">最大</div>
+    </div>
+    <!-- ★ Persistent AI Entry Row -->
+    <div class="ai-persistent-row" onclick="goTo(2)">
+      <div class="apr-left">
+        <div class="apr-icon">🤖</div>
+        <div class="apr-text">
+          <div class="main">AI 交易助手</div>
+          <div class="sub">包赔券已就绪 · 首单最高 $200 保障</div>
+        </div>
+      </div>
+      <div class="apr-arr">›</div>
+    </div>
+    <div class="keypad">
+      <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+      <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+      <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+      <div class="key sym">.</div><div class="key">0</div><div class="key sym">⌫</div>
+    </div>
+    <div class="bnav-slot" id="bn-f3"></div>
+  </div><!-- /s1-f3 -->
+
+  <!-- ═══ SCREEN 1-T1: Dismissible Banner ═══ -->
+  <div class="screen" id="s1-t1">
+    <div class="sbar"><span class="time">9:41</span><span class="icons">●●● ▲ 🔋</span></div>
+    <div class="action-bar"><div class="nav-ai-btn" onclick="goTo(2)">🤖</div><div class="nav-more">···</div></div>
+    <div class="trade-tabs">
+      <div class="ttab on">闪兑</div><div class="ttab">现货</div><div class="ttab">合约</div><div class="ttab">DEX</div><div class="ttab">策略</div>
+    </div>
+    <div class="pills-row">
+      <div class="pills-group">
+        <div class="pill">买入</div><div class="pill">卖出</div><div class="pill on">闪兑</div>
+      </div>
+      <div class="pills-extra">📋</div>
+    </div>
+    <div class="amount-area">
+      <div class="amount-num"><span>0</span><div class="amount-cursor"></div><span class="amount-ccy">USDT</span></div>
+      <div class="amount-usd">↕ ≈0 USD</div>
+    </div>
+    <div class="token-card">
+      <div class="trow">
+        <div class="tlogo" style="background:#26A17B;color:#fff">USDT</div>
+        <div class="tinfo"><div class="tname">闪兑</div><div class="tlabel">USDT</div></div>
+        <div class="tbalance"><div class="tbal-num">0.00 USDT</div><div class="tbal-label">可用</div></div>
+        <div class="tchev">›</div>
+      </div>
+      <div class="trow" style="position:relative">
+        <div class="swap-icon">↕</div>
+        <div class="tlogo" style="background:#2775CA;color:#fff">USDC</div>
+        <div class="tinfo"><div class="tname">至</div><div class="tlabel">USDC</div></div>
+        <div class="tbalance"><div class="tbal-num">0.00 USDC</div><div class="tbal-label">&nbsp;</div></div>
+        <div class="tchev">›</div>
+      </div>
+    </div>
+    <div class="pct-row"><div class="pct-btn">25%</div><div class="pct-btn">50%</div><div class="pct-btn">75%</div><div class="pct-btn">最大</div></div>
+    <!-- ★ T1 Dismissible Banner -->
+    <div class="ai-banner" id="banner-t1" onclick="goTo(2)" style="cursor:pointer">
+      <div class="ab-icon">🤖</div>
+      <div class="ab-text">
+        <div class="ab-main">不知道买什么？AI 帮你推荐</div>
+        <div class="ab-sub">包赔券已就绪 · 首单最高 $200 保障</div>
+      </div>
+      <div class="ab-arr">›</div>
+      <div class="ab-x" onclick="event.stopPropagation();dismissBanner('banner-t1')">✕</div>
+    </div>
+    <div class="keypad">
+      <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+      <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+      <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+      <div class="key sym">.</div><div class="key">0</div><div class="key sym">⌫</div>
+    </div>
+    <div class="bnav-slot" id="bn-t1"></div>
+  </div><!-- /s1-t1 -->
+
+  <!-- ═══ SCREEN 1-T2: Zero-State AI Chips ═══ -->
+  <div class="screen" id="s1-t2">
+    <div class="sbar"><span class="time">9:41</span><span class="icons">●●● ▲ 🔋</span></div>
+    <div class="action-bar"><div class="nav-ai-btn" onclick="goTo(2)">🤖</div><div class="nav-more">···</div></div>
+    <div class="trade-tabs">
+      <div class="ttab on">闪兑</div><div class="ttab">现货</div><div class="ttab">合约</div><div class="ttab">DEX</div><div class="ttab">策略</div>
+    </div>
+    <div class="pills-row">
+      <div class="pills-group">
+        <div class="pill">买入</div><div class="pill">卖出</div><div class="pill on">闪兑</div>
+      </div>
+      <div class="pills-extra">📋</div>
+    </div>
+    <div class="amount-area">
+      <div class="amount-num" style="color:#2A2A2A"><span>0</span><div class="amount-cursor"></div><span class="amount-ccy" style="color:#2A2A2A">USDT</span></div>
+      <div class="amount-usd" style="color:#333">↕ ≈0 USD</div>
+    </div>
+    <!-- ★ T2 Zero-State AI Chips -->
+    <div class="zero-state-ai" id="chips-t2">
+      <div class="zs-prompt">不确定买什么？<span class="hl">AI 帮你分析</span></div>
+      <div class="zs-chips">
+        <div class="zs-chip" onclick="goTo(2)">✨ 给我推荐</div>
+        <div class="zs-chip" onclick="goTo(2)">🪙 买 BTC</div>
+        <div class="zs-chip" onclick="goTo(2)">💡 $1 小额试试</div>
+      </div>
+      <div class="zs-note">点击快捷选项，或直接输入金额开始交易</div>
+    </div>
+    <div class="token-card">
+      <div class="trow">
+        <div class="tlogo" style="background:#26A17B;color:#fff">USDT</div>
+        <div class="tinfo"><div class="tname">闪兑</div><div class="tlabel">USDT</div></div>
+        <div class="tbalance"><div class="tbal-num">0.00 USDT</div><div class="tbal-label">可用</div></div>
+        <div class="tchev">›</div>
+      </div>
+      <div class="trow" style="position:relative">
+        <div class="swap-icon">↕</div>
+        <div class="tlogo" style="background:#2775CA;color:#fff">USDC</div>
+        <div class="tinfo"><div class="tname">至</div><div class="tlabel">USDC</div></div>
+        <div class="tbalance"><div class="tbal-num">0.00 USDC</div><div class="tbal-label">&nbsp;</div></div>
+        <div class="tchev">›</div>
+      </div>
+    </div>
+    <div class="pct-row">
+      <div class="pct-btn">25%</div><div class="pct-btn">50%</div><div class="pct-btn">75%</div><div class="pct-btn">最大</div>
+    </div>
+    <div class="keypad">
+      <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+      <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+      <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+      <div class="key sym">.</div><div class="key">0</div><div class="key sym">⌫</div>
+    </div>
+    <div class="bnav-slot" id="bn-t2"></div>
+  </div><!-- /s1-t2 -->
+
+  <!-- ═══ SCREEN 2: AI Chat Overlay ═══ -->
+  <div class="screen" id="s2">
+    <div class="sbar"><span class="time">9:41</span><span class="icons">●●● ▲ 🔋</span></div>
+    <div class="chat-nav">
+      <div onclick="goTo(1)" style="cursor:pointer;color:#888;font-size:20px;padding:0 4px;">‹</div>
+      <div style="font-size:15px;font-weight:600;color:#fff;">AI 交易助手</div>
+      <div style="font-size:12px;color:#C0F237;background:rgba(192,242,55,.1);border:1px solid rgba(192,242,55,.25);border-radius:10px;padding:2px 8px;">在线</div>
+    </div>
+    <div class="chat-body" id="cb2">
+      <!-- messages injected by JS initS2() -->
+    </div>
+    <div class="chips-row" id="cr2">
+      <div class="chip" onclick="s2chip('给我推荐')">✨ 给我推荐</div>
+      <div class="chip" onclick="s2chip('买 BTC')">🪙 买 BTC</div>
+      <div class="chip" onclick="s2chip('$1 小额试试')">💡 $1 试试</div>
+    </div>
+    <div class="chat-inp" id="ci2">
+      <input id="inp2" type="text" placeholder="输入你的问题…"
+        style="flex:1;background:none;border:none;color:#fff;font-size:14px;outline:none;"
+        onkeydown="if(event.key==='Enter'&&this.value.trim()){s2chip(this.value.trim());this.value='';}" />
+      <div class="chat-send" onclick="var v=document.getElementById('inp2').value.trim();if(v){s2chip(v);document.getElementById('inp2').value='';}">↑</div>
+    </div>
+    <div class="bnav-slot"></div>
+  </div><!-- /s2 -->
+
+  <!-- ═══ SCREEN 3: AI Recommendation ═══ -->
+  <div class="screen" id="s3">
+    <div class="sbar"><span class="time">9:41</span><span class="icons">●●● ▲ 🔋</span></div>
+    <div class="chat-nav">
+      <div onclick="goTo(2)" style="cursor:pointer;color:#888;font-size:20px;padding:0 4px;">‹</div>
+      <div style="font-size:15px;font-weight:600;color:#fff;">AI 交易助手</div>
+      <div style="font-size:12px;color:#C0F237;background:rgba(192,242,55,.1);border:1px solid rgba(192,242,55,.25);border-radius:10px;padding:2px 8px;">在线</div>
+    </div>
+    <div class="chat-body" id="cb3">
+      <!-- messages + rec card injected by JS initS3() -->
+    </div>
+    <div class="chips-row" id="cr3">
+      <div class="chip" onclick="s3action('confirm')">✓ 就这个，买 $10</div>
+      <div class="chip" onclick="s3action('change')">换一个</div>
+    </div>
+    <div class="chat-inp">
+      <input type="text" placeholder="输入你的问题…" style="flex:1;background:none;border:none;color:#fff;font-size:14px;outline:none;" />
+      <div class="chat-send">↑</div>
+    </div>
+    <div class="bnav-slot"></div>
+  </div><!-- /s3 -->
+
+  <!-- ═══ SCREEN 4A: In-Chat Confirm ═══ -->
+  <div class="screen" id="s4a">
+    <div class="sbar"><span class="time">9:41</span><span class="icons">●●● ▲ 🔋</span></div>
+    <div class="chat-nav">
+      <div onclick="goTo(3)" style="cursor:pointer;color:#888;font-size:20px;padding:0 4px;">‹</div>
+      <div style="font-size:15px;font-weight:600;color:#fff;">AI 交易助手</div>
+      <div style="font-size:12px;color:#C0F237;background:rgba(192,242,55,.1);border:1px solid rgba(192,242,55,.25);border-radius:10px;padding:2px 8px;">在线</div>
+    </div>
+    <div class="chat-body" id="cb4a">
+      <!-- confirmation card injected by JS initS4a() -->
+    </div>
+    <div class="chips-row" id="cr4a" style="display:none;">
+      <div class="chip" onclick="confirmChat()">✅ 确认交易</div>
+      <div class="chip" onclick="goTo(3)">取消</div>
+    </div>
+    <div class="chat-inp">
+      <input type="text" placeholder="输入你的问题…" style="flex:1;background:none;border:none;color:#fff;font-size:14px;outline:none;" />
+      <div class="chat-send">↑</div>
+    </div>
+    <div class="bnav-slot"></div>
+  </div><!-- /s4a -->
+
+  <!-- ═══ SCREEN 4B: Standalone Confirm Page ═══ -->
+  <div class="screen" id="s4b">
+    <div class="sbar"><span class="time">9:41</span><span class="icons">●●● ▲ 🔋</span></div>
+    <!-- Voucher bar -->
+    <div class="page-voucher">
+      <span>🛡️</span>
+      <span style="font-size:12px;color:#C0F237;font-weight:500;">亏损保障券已就绪 · 最高补偿 10 USDT</span>
+    </div>
+    <!-- Nav -->
+    <div class="page-nav">
+      <div onclick="goTo(3)" style="cursor:pointer;color:#888;font-size:20px;">‹</div>
+      <div style="font-size:15px;font-weight:600;color:#fff;">确认交易</div>
+      <div style="width:24px;"></div>
+    </div>
+    <!-- Body -->
+    <div class="page-body">
+      <div class="conf-row"><span class="conf-label">兑换方向</span><span class="conf-val">USDT → BTC</span></div>
+      <div class="conf-row"><span class="conf-label">买入金额</span><span class="conf-val">10.00 USDT</span></div>
+      <div class="conf-row"><span class="conf-label">参考价格</span><span class="conf-val">$83,420 / BTC</span></div>
+      <div class="conf-row"><span class="conf-label">预计到账</span><span class="conf-val conf-green">≈ 0.000120 BTC</span></div>
+      <div class="conf-row"><span class="conf-label">手续费</span><span class="conf-val">~$0.02</span></div>
+      <div class="conf-row" style="border-top:.5px solid #222;padding-top:12px;margin-top:4px;">
+        <span class="conf-label">实付金额</span><span class="conf-val" style="font-weight:700;font-size:15px;">10.02 USDT</span>
+      </div>
+      <div style="background:rgba(192,242,55,.08);border:1px solid rgba(192,242,55,.2);border-radius:10px;padding:10px 12px;margin-top:12px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:16px;">🛡️</span>
+        <div><div style="font-size:12px;font-weight:600;color:#C0F237;">亏损保障券已激活</div><div style="font-size:11px;color:#888;margin-top:2px;">48小时内如有亏损，最高补偿 10 USDT</div></div>
+      </div>
+    </div>
+    <div style="padding:0 16px 16px;margin-top:auto;">
+      <div class="page-cta" id="cta-4b" onclick="confirmPage()">确认交易</div>
+    </div>
+    <div class="bnav-slot"></div>
+  </div><!-- /s4b -->
+
+  <!-- ═══ SCREEN 5: Success ═══ -->
+  <div class="screen" id="s5">
+    <div class="sbar"><span class="time">9:41</span><span class="icons">●●● ▲ 🔋</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;overflow-y:auto;">
+      <div class="suc-body">
+        <div class="suc-icon">🎉</div>
+        <div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;">交易成功！</div>
+        <div style="font-size:13px;color:#888;">你成为加密持有者了 🚀</div>
+        <div style="background:#111;border:1px solid #222;border-radius:12px;padding:14px 16px;width:100%;margin-top:20px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:13px;color:#888;">买入</span>
+            <span style="font-size:14px;font-weight:600;color:#fff;">0.000120 BTC</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:13px;color:#888;">实付金额</span>
+            <span style="font-size:14px;font-weight:500;color:#fff;">$10.02 USDT</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:13px;color:#888;">成交价格</span>
+            <span style="font-size:13px;color:#888;">$83,420 / BTC</span>
+          </div>
+        </div>
+        <div style="background:rgba(192,242,55,.08);border:1px solid rgba(192,242,55,.2);border-radius:12px;padding:12px 14px;width:100%;margin-top:12px;display:flex;align-items:flex-start;gap:10px;">
+          <span style="font-size:18px;">🛡️</span>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#C0F237;">亏损保障券已激活</div>
+            <div style="font-size:11px;color:#888;margin-top:3px;">48小时保护中 · 已消耗 1 张，剩余 2 张</div>
+          </div>
+        </div>
+      </div>
+      <!-- Progress milestones -->
+      <div style="padding:0 16px 16px;">
+        <div style="background:#111;border:1px solid #222;border-radius:12px;padding:14px 16px;">
+          <div style="font-size:12px;color:#888;margin-bottom:10px;">交易旅程 · 完成更多赢奖励</div>
+          <div style="display:flex;align-items:center;gap:0;">
+            <div style="width:24px;height:24px;border-radius:50%;background:#C0F237;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#000;flex-shrink:0;">1</div>
+            <div style="flex:1;height:2px;background:linear-gradient(90deg,#C0F237 0%,#222 100%);"></div>
+            <div style="width:24px;height:24px;border-radius:50%;background:#222;border:1px solid #333;display:flex;align-items:center;justify-content:center;font-size:10px;color:#555;flex-shrink:0;">2</div>
+            <div style="flex:1;height:2px;background:#222;"></div>
+            <div style="width:24px;height:24px;border-radius:50%;background:#222;border:1px solid #333;display:flex;align-items:center;justify-content:center;font-size:10px;color:#555;flex-shrink:0;">3</div>
+            <div style="flex:1;height:2px;background:#222;"></div>
+            <div style="width:24px;height:24px;border-radius:50%;background:#222;border:1px solid #333;display:flex;align-items:center;justify-content:center;font-size:10px;color:#555;flex-shrink:0;">5</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;">
+            <span style="font-size:10px;color:#C0F237;">首笔 ✓</span>
+            <span style="font-size:10px;color:#555;">+$5</span>
+            <span style="font-size:10px;color:#555;">+$10</span>
+            <span style="font-size:10px;color:#555;">+$20</span>
+          </div>
+          <div style="font-size:11px;color:#888;margin-top:8px;">再交易 <span style="color:#C0F237;">4 笔</span>，赢 $20 奖励</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:0 16px 12px;display:flex;gap:10px;">
+      <div onclick="goTo(2)" style="flex:1;height:44px;border-radius:22px;background:#1C1C1C;border:1px solid #333;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;color:#fff;cursor:pointer;">再买一笔</div>
+      <div style="flex:1;height:44px;border-radius:22px;background:#C0F237;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;cursor:pointer;">查看持仓</div>
+    </div>
+    <div class="bnav-slot"></div>
+  </div><!-- /s5 -->
+
+  <!-- ═══ PROCESSING OVERLAY ═══ -->
+  <div class="proc" id="proc">
+    <div class="spinner"></div>
+    <div style="font-size:14px;color:#888;margin-top:12px;" id="proc-txt">交易处理中…</div>
+  </div>
+
+</div><!-- /phone -->
+
+<script>
+// ── STATE ──
+let step = 1, variant = 'f2', q5mode = 'chat';
+let amts = { f2:'0', f3:'0', t1:'0', t2:'0' };
+let s2done = false, s3done = false, s4aDone = false;
+
+// ── NAVIGATION ──
+function goTo(n) {
+  if (n === 0) { showScreen('s0'); return; }
+  if (n === 1) { showScreen('s1-' + variant); updateProg(1); return; }
+  if (n === 2) { showScreen('s2'); updateProg(2); if (!s2done) { setTimeout(initS2, 200); s2done=true; } return; }
+  if (n === 3) { showScreen('s3'); updateProg(3); if (!s3done) { setTimeout(initS3, 200); s3done=true; } return; }
+  if (n === 4) {
+    if (q5mode === 'chat') { showScreen('s4a'); updateProg(4); if (!s4aDone) { setTimeout(initS4a, 200); s4aDone=true; } }
+    else { showScreen('s4b'); updateProg(4); }
+    return;
+  }
+  if (n === 5) { showScreen('s5'); updateProg(5); }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('on');
+}
+
+function updateProg(n) {
+  step = n;
+  for (let i = 1; i <= 5; i++) {
+    document.getElementById('pd'+i).classList.toggle('on', i <= n);
+    document.getElementById('pln'+i).classList.toggle('on', i <= n);
+    const ln = document.getElementById('pl'+i);
+    if (ln) ln.classList.toggle('on', i < n);
+  }
+}
+
+// ── VARIANT SWITCHER ──
+function setV(v) {
+  variant = v;
+  document.querySelectorAll('.vb').forEach(b => b.classList.remove('on'));
+  document.getElementById('vb-' + v).classList.add('on');
+  // reset journey flags when switching variant
+  s2done = false; s3done = false; s4aDone = false;
+  document.getElementById('cb2').innerHTML = '';
+  document.getElementById('cb3').innerHTML = '';
+  document.getElementById('cb4a').innerHTML = '';
+  document.getElementById('cr4a').style.display = 'none';
+  goTo(1);
+}
+
+// ── Q5 TOGGLE ──
+function setQ5(mode) {
+  q5mode = mode;
+  document.getElementById('q5a').classList.toggle('on', mode === 'chat');
+  document.getElementById('q5b_btn').classList.toggle('on', mode === 'page');
+}
+
+// ── KEYPAD ──
+function kp(key, vid) {
+  let a = amts[vid] || '0';
+  if (key === '⌫')      { a = a.length > 1 ? a.slice(0,-1) : '0'; }
+  else if (key === '.') { if (!a.includes('.')) a += '.'; }
+  else                  { if (a === '0') a = key; else a += key; }
+  if (a.length > 10) return;
+  amts[vid] = a;
+  const amEl = document.getElementById('amt-' + vid);
+  if (amEl) {
+    amEl.textContent = a;
+    if (vid === 't2') {
+      amEl.style.color = a !== '0' ? '#fff' : '#2A2A2A';
+      const cur = amEl.nextElementSibling;
+      if (cur) { cur.style.color = a !== '0' ? '#fff' : '#333'; }
+      const sub = amEl.parentNode.nextElementSibling;
+      if (sub) sub.style.color = a !== '0' ? '#888' : '#333';
+      // hide T2 chips on first input
+      if (a !== '0') {
+        const chips = document.getElementById('chips-t2');
+        if (chips) chips.style.display = 'none';
+      }
+    }
+  }
+  const v = parseFloat(a) || 0;
+  const rcv = document.getElementById('rcv-' + vid);
+  if (rcv) rcv.textContent = '≈ ' + (v * 83420).toFixed(2);
+  const rcv2 = document.getElementById('rcv2-' + vid);
+  if (rcv2) rcv2.textContent = '≈ ' + (v / 83420).toFixed(6) + ' BTC';
+}
+
+function setPct(p, vid) {
+  const bal = 312.50;
+  amts[vid] = String((bal * p / 100).toFixed(2));
+  kp('_refresh', vid); // re-render
+  amts[vid] = String((bal * p / 100).toFixed(2));
+  const amEl = document.getElementById('amt-' + vid);
+  if (amEl) {
+    amEl.textContent = amts[vid];
+    if (vid === 't2') amEl.style.color = '#fff';
+  }
+  const v = parseFloat(amts[vid]);
+  const rcv = document.getElementById('rcv-' + vid);
+  if (rcv) rcv.textContent = '≈ ' + (v * 83420).toFixed(2);
+  const rcv2 = document.getElementById('rcv2-' + vid);
+  if (rcv2) rcv2.textContent = '≈ ' + (v / 83420).toFixed(6) + ' BTC';
+  if (vid === 't2') {
+    const chips = document.getElementById('chips-t2');
+    if (chips) chips.style.display = 'none';
+  }
+}
+
+function dismissBanner(id) {
+  const el = document.getElementById(id);
+  if (el) { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(()=>el.style.display='none', 300); }
+}
+
+function zsGo(vid) { goTo(2); }
+
+// ── TYPING ANIMATION ──
+function typeMsg(el, text, cb) {
+  el.textContent = '';
+  let i = 0;
+  const t = setInterval(() => {
+    el.textContent += text[i++];
+    const cb2 = document.getElementById('cb2'), cb3 = document.getElementById('cb3'), cb4a = document.getElementById('cb4a');
+    if (el.closest('#cb2') && cb2) cb2.scrollTop = cb2.scrollHeight;
+    if (el.closest('#cb3') && cb3) cb3.scrollTop = cb3.scrollHeight;
+    if (el.closest('#cb4a') && cb4a) cb4a.scrollTop = cb4a.scrollHeight;
+    if (i >= text.length) { clearInterval(t); if (cb) cb(); }
+  }, 16);
+}
+
+function addUserBubble(container, text) {
+  const d = document.createElement('div');
+  d.className = 'mu'; d.textContent = text;
+  container.appendChild(d);
+  container.scrollTop = container.scrollHeight;
+}
+
+function addAIBubble(container, html, cb) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ai-row';
+  wrap.innerHTML = '<div class="ai-av">🤖</div><div class="ma"></div>';
+  container.appendChild(wrap);
+  const ma = wrap.querySelector('.ma');
+  container.scrollTop = container.scrollHeight;
+  if (typeof html === 'string' && !html.includes('<')) {
+    typeMsg(ma, html, cb);
+  } else {
+    ma.innerHTML = html;
+    if (cb) setTimeout(cb, 300);
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+// ── SCREEN 2: AI GREETING ──
+function initS2() {
+  const cb = document.getElementById('cb2');
+  cb.innerHTML = '';
+  const typing = document.createElement('div');
+  typing.className = 'ai-row';
+  typing.innerHTML = '<div class="ai-av">🤖</div><div class="typing"><span></span><span></span><span></span></div>';
+  cb.appendChild(typing);
+  setTimeout(() => {
+    cb.removeChild(typing);
+    addAIBubble(cb, '你好！看起来你还没开始交易。我可以帮你推荐第一笔，$1 即可开始 💡', () => {
+      document.getElementById('cr2').style.display = 'flex';
+    });
+  }, 1200);
+  document.getElementById('cr2').style.display = 'none';
+}
+
+// ── SCREEN 2: CHIP CLICK ──
+function s2chip(text) {
+  const cb = document.getElementById('cb2');
+  document.getElementById('cr2').style.display = 'none';
+  addUserBubble(cb, text);
+  const typing = document.createElement('div');
+  typing.className = 'ai-row';
+  typing.innerHTML = '<div class="ai-av">🤖</div><div class="typing"><span></span><span></span><span></span></div>';
+  cb.appendChild(typing);
+  setTimeout(() => { cb.removeChild(typing); goTo(3); }, 1000);
+}
+
+// ── SCREEN 3: AI RECOMMENDATION ──
+function initS3() {
+  const cb = document.getElementById('cb3');
+  cb.innerHTML = '';
+  addUserBubble(cb, '给我推荐');
+  const typing = document.createElement('div');
+  typing.className = 'ai-row';
+  typing.innerHTML = '<div class="ai-av">🤖</div><div class="typing"><span></span><span></span><span></span></div>';
+  cb.appendChild(typing);
+  setTimeout(() => {
+    cb.removeChild(typing);
+    addAIBubble(cb, '根据你的情况，我推荐 BTC —— 市值最大、流动性最好，新手首选 👇', () => {
+      setTimeout(() => addRecCard(cb), 400);
+    });
+  }, 1400);
+  document.getElementById('cr3').style.display = 'none';
+}
+
+function addRecCard(cb) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ai-row';
+  wrap.innerHTML = '<div class="ai-av"></div><div style="flex:1;"></div>';
+  const cardWrap = wrap.querySelector('div:last-child');
+  cardWrap.innerHTML = `
+    <div class="rec-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:#F7931A;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;">₿</div>
+          <div><div style="font-size:14px;font-weight:600;color:#fff;">比特币 BTC/USDT</div><div style="font-size:11px;color:#888;">Bitcoin</div></div>
+        </div>
+        <div style="text-align:right;"><div style="font-size:14px;font-weight:600;color:#C0F237;">+2.3%</div><div style="font-size:11px;color:#888;">24h</div></div>
+      </div>
+      <div style="font-size:13px;color:#888;margin-bottom:8px;">当前价格：<span style="color:#fff;font-weight:500;">$83,420</span></div>
+      <div style="font-size:12px;color:#888;background:#111;border-radius:8px;padding:8px 10px;margin-bottom:10px;">💡 市值最大、流动性最好，适合新手首次参与</div>
+      <div style="background:rgba(192,242,55,.08);border:1px solid rgba(192,242,55,.2);border-radius:8px;padding:8px 10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+        <div><div style="font-size:11px;color:#888;">买入金额</div><div style="font-size:14px;font-weight:600;color:#fff;">$10 USDT</div></div>
+        <div style="font-size:12px;color:#C0F237;">🛡️ 包赔券保护</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div onclick="s3action('confirm')" style="flex:2;height:36px;border-radius:18px;background:#C0F237;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#000;cursor:pointer;">✓ 就这个，买 $10</div>
+        <div onclick="s3action('change')" style="flex:1;height:36px;border-radius:18px;background:#1C1C1C;border:1px solid #333;display:flex;align-items:center;justify-content:center;font-size:13px;color:#888;cursor:pointer;">换一个</div>
+      </div>
+    </div>`;
+  cb.appendChild(wrap);
+  cb.scrollTop = cb.scrollHeight;
+  setTimeout(() => { document.getElementById('cr3').style.display = 'flex'; }, 300);
+}
+
+function s3action(type) {
+  document.getElementById('cr3').style.display = 'none';
+  if (type === 'confirm') { goTo(4); }
+  else {
+    const cb = document.getElementById('cb3');
+    addUserBubble(cb, '换一个');
+    setTimeout(() => addAIBubble(cb, '好的，换一个试试？点击下方直接进入 👇', () => {
+      setTimeout(() => { document.getElementById('cr3').style.display = 'flex'; }, 200);
+    }), 600);
+  }
+}
+
+// ── SCREEN 4A: IN-CHAT CONFIRM ──
+function initS4a() {
+  const cb = document.getElementById('cb4a');
+  cb.innerHTML = '';
+  addUserBubble(cb, '就这个，买 $10');
+  const typing = document.createElement('div');
+  typing.className = 'ai-row';
+  typing.innerHTML = '<div class="ai-av">🤖</div><div class="typing"><span></span><span></span><span></span></div>';
+  cb.appendChild(typing);
+  setTimeout(() => {
+    cb.removeChild(typing);
+    addAIBubble(cb, '好的！帮你确认一下订单详情 📋', () => {
+      setTimeout(() => addConfCard(cb), 500);
+    });
+  }, 1000);
+}
+
+function addConfCard(cb) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ai-row';
+  wrap.innerHTML = '<div class="ai-av"></div><div style="flex:1;"></div>';
+  const cardWrap = wrap.querySelector('div:last-child');
+  cardWrap.innerHTML = `
+    <div class="conf-card">
+      <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:10px;">📋 确认你的订单</div>
+      <div class="conf-row"><span class="conf-label">买入</span><span class="conf-val">BTC/USDT</span></div>
+      <div class="conf-row"><span class="conf-label">金额</span><span class="conf-val">10 USDT</span></div>
+      <div class="conf-row"><span class="conf-label">参考价</span><span class="conf-val">$83,420</span></div>
+      <div class="conf-row"><span class="conf-label">手续费</span><span class="conf-val">~$0.02</span></div>
+      <div class="conf-row" style="border-top:.5px solid #333;padding-top:8px;margin-top:4px;">
+        <span class="conf-label">实付</span><span class="conf-val" style="font-weight:700;color:#fff;">10.02 USDT</span>
+      </div>
+      <div style="background:rgba(192,242,55,.08);border:1px solid rgba(192,242,55,.2);border-radius:8px;padding:8px 10px;margin:10px 0;font-size:12px;color:#C0F237;">
+        🛡️ 亏损保障券已激活 · 最高补偿 $10
+      </div>
+    </div>`;
+  cb.appendChild(wrap);
+  cb.scrollTop = cb.scrollHeight;
+  setTimeout(() => { document.getElementById('cr4a').style.display = 'flex'; }, 300);
+}
+
+function confirmChat() {
+  document.getElementById('cr4a').style.display = 'none';
+  const cb = document.getElementById('cb4a');
+  addUserBubble(cb, '确认交易');
+  showProc();
+  setTimeout(() => { hideProc(); goTo(5); }, 1800);
+}
+
+// ── SCREEN 4B: STANDALONE CONFIRM ──
+function confirmPage() {
+  const btn = document.getElementById('cta-4b');
+  btn.textContent = '处理中…'; btn.style.opacity = '.6';
+  showProc();
+  setTimeout(() => { hideProc(); btn.textContent = '确认交易'; btn.style.opacity = '1'; goTo(5); }, 1800);
+}
+
+// ── PROCESSING OVERLAY ──
+function showProc() { document.getElementById('proc').classList.add('show'); }
+function hideProc() { document.getElementById('proc').classList.remove('show'); }
+
+// ── BOTTOM NAV INJECTION ──
+const BNAV_HOME = `<div class="bnav">
+  <div class="bitem"><div class="bicon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="2" width="8" height="8" rx="2" fill="#fff"/><rect x="12" y="2" width="8" height="8" rx="2" fill="#fff"/><rect x="2" y="12" width="8" height="8" rx="2" fill="#fff"/><rect x="12" y="12" width="8" height="8" rx="2" fill="#fff"/></svg></div><div class="blabel on">欧易</div></div>
+  <div class="bitem"><div class="bicon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8.5" stroke="#555" stroke-width="1.5"/><circle cx="11" cy="11" r="3" stroke="#555" stroke-width="1.3"/><path d="M11 2.5V6M11 16V19.5M2.5 11H6M16 11H19.5" stroke="#555" stroke-width="1.3" stroke-linecap="round"/></svg></div><div class="blabel">探索</div></div>
+  <div class="bitem center" onclick="goTo(1)">
+    <div class="trade-orb"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12.5 4L15.5 7L12.5 10" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 7H15.5" stroke="#000" stroke-width="1.8" stroke-linecap="round"/><path d="M7.5 16L4.5 13L7.5 10" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 13H4.5" stroke="#000" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+    <div class="blabel" style="margin-top:2px">交易</div>
+  </div>
+  <div class="bitem"><div class="bicon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="4" stroke="#555" stroke-width="1.5"/><path d="M3 8C3 8 6.5 6 11 7.5C15.5 9 19 11.5 19 11.5C19 11.5 15.5 15 11 14C6.5 13 3 11.5 3 11.5" stroke="#555" stroke-width="1.3" stroke-linecap="round"/></svg></div><div class="blabel">星球</div></div>
+  <div class="bitem"><div class="bicon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="6.5" width="16" height="11" rx="2" stroke="#555" stroke-width="1.5"/><path d="M3 10.5H19" stroke="#555" stroke-width="1.3"/><circle cx="15.5" cy="14" r="1.5" fill="#555"/></svg></div><div class="blabel">资产</div></div>
+</div>`;
+
+const BNAV_TRADE = `<div class="bnav">
+  <div class="bitem" onclick="goTo(0)"><div class="bicon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="2" width="8" height="8" rx="2" fill="#555"/><rect x="12" y="2" width="8" height="8" rx="2" fill="#555"/><rect x="2" y="12" width="8" height="8" rx="2" fill="#555"/><rect x="12" y="12" width="8" height="8" rx="2" fill="#555"/></svg></div><div class="blabel">欧易</div></div>
+  <div class="bitem"><div class="bicon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8.5" stroke="#555" stroke-width="1.5"/><circle cx="11" cy="11" r="3" stroke="#555" stroke-width="1.3"/><path d="M11 2.5V6M11 16V19.5M2.5 11H6M16 11H19.5" stroke="#555" stroke-width="1.3" stroke-linecap="round"/></svg></div><div class="blabel">探索</div></div>
+  <div class="bitem center">
+    <div class="trade-orb"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M12.5 4L15.5 7L12.5 10" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 7H15.5" stroke="#000" stroke-width="1.8" stroke-linecap="round"/><path d="M7.5 16L4.5 13L7.5 10" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 13H4.5" stroke="#000" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+    <div class="blabel on" style="margin-top:2px">交易</div>
+  </div>
+  <div class="bitem"><div class="bicon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="4" stroke="#555" stroke-width="1.5"/><path d="M3 8C3 8 6.5 6 11 7.5C15.5 9 19 11.5 19 11.5C19 11.5 15.5 15 11 14C6.5 13 3 11.5 3 11.5" stroke="#555" stroke-width="1.3" stroke-linecap="round"/></svg></div><div class="blabel">星球</div></div>
+  <div class="bitem"><div class="bicon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="6.5" width="16" height="11" rx="2" stroke="#555" stroke-width="1.5"/><path d="M3 10.5H19" stroke="#555" stroke-width="1.3"/><circle cx="15.5" cy="14" r="1.5" fill="#555"/></svg></div><div class="blabel">资产</div></div>
+</div>`;
+
+// ── INIT ──
+function init() {
+  // inject BNAV_HOME into homepage slot, BNAV_TRADE into all other slots
+  const homeSlot = document.getElementById('bn-s0');
+  if (homeSlot) homeSlot.innerHTML = BNAV_HOME;
+  document.querySelectorAll('.bnav-slot').forEach(slot => {
+    if (slot.id !== 'bn-s0') slot.innerHTML = BNAV_TRADE;
+  });
+  // start on homepage
+  showScreen('s0');
+  updateProg(1);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
